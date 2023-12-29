@@ -1,0 +1,119 @@
+<h1>
+    The Home page will be rendered here  
+</h1>
+
+<button id="start-recording">Start Recording</button>
+&nbsp;
+<br />
+<br />
+<div id="text-output">
+    <p>
+        The output text from speech is displayed below
+    </p>
+
+
+</div>
+
+ <button id="play-button">Play</button>
+
+
+<br />
+<br />
+
+<button id="stop-Button">Stop</button>
+
+<br />
+<br />
+
+<button id="next-button">Next</button>
+
+
+<div id="songs-container">
+    <!-- Songs will be added here -->
+</div>
+
+<script>
+    let mediaRecorder;
+    let audioChunks = [];
+
+
+   
+    document.getElementById('start-recording').addEventListener('click', () => {
+    navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(stream => {
+            let options = { mimeType: 'audio/webm' };
+            mediaRecorder = new MediaRecorder(stream, options);
+            mediaRecorder.start();
+
+            mediaRecorder.addEventListener('dataavailable', event => {
+                audioChunks.push(event.data);
+            });
+
+            mediaRecorder.addEventListener('stop', () => {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                sendDataToServer(audioBlob);
+                audioChunks = [];
+            });
+
+            setTimeout(() => mediaRecorder.stop(), 5000);
+        });
+});
+
+function sendDataToServer(audioBlob) {
+    console.log('Sending audio data to server');
+    const formData = new FormData();
+    formData.append('audio', audioBlob, 'recording.webm');
+    fetch('/', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Received response from server:', data);
+        const transcript = data.transcript.toLowerCase();
+        document.getElementById('text-output').innerText = transcript;
+        if(transcript.includes("play")){
+            document.getElementById('play-button').click();
+            
+        }else if(transcript.includes("stop")){
+            document.getElementById('stop-Button').click();
+        }else if(transcript.includes("next")){
+            document.getElementById('next-button').click();
+        }
+    });
+}
+
+   
+document.getElementById('play-button').addEventListener('click', () => {
+    console.log('Play clicked');
+    // Add any other logic you want to execute when 'Play' is said
+});
+
+document.getElementById('stop-Button').addEventListener('click', () => {
+    console.log('Stop clicked');
+    // Add logic for 'Stop'
+});
+
+document.getElementById('next-button').addEventListener('click', () => {
+    console.log('Next clicked');
+    // Add logic for 'Next'
+});
+
+// function displaySongs(songs) {
+//     const container = document.getElementById('songs-container');
+//     container.innerText = ''; // Clear previous content
+
+//     songs.forEach(song => {
+//         const songDiv = document.createElement('div');
+//         const title = document.createElement('h3');
+//         title.textContent = song.name;
+
+//         const artist = document.createElement('p');
+//         artist.textContent = `Artist: ${song.artist_name}`;
+
+
+//         container.appendChild(songDiv);
+//     });
+// }
+
+</script>
